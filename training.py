@@ -88,14 +88,14 @@ if __name__ == "__main__":
     model.classifier[-1] = nn.Sequential(
     nn.Conv2d(256, 43, kernel_size=1))
     for param in model.parameters():
-        param.requires_grad = False
+        param.requires_grad = True
 
 
 
 # Make sure the last layer parameters are set to require gradients
-    for param in model.classifier[-1].parameters():
+    '''for param in model.classifier[-1].parameters():
         param.requires_grad = True
-        
+        '''
     
     model.train()
     model.to('cuda')
@@ -121,7 +121,7 @@ if __name__ == "__main__":
         
     # Create the custom dataset
     dataset = CustomDataset(csv_file, image_folder, target_folder,transform_image=transform, transform_target =transform_target)
-    batch_size = 4
+    batch_size = 40
     # Create the data loader
     
     train_ratio = 0.8
@@ -145,7 +145,7 @@ if __name__ == "__main__":
     # Training loop
     num_epochs = 100
     for epoch in tqdm(range(num_epochs), desc="Main training"):
-
+        avgloss = 0
         for images, targets in tqdm(dataloader, desc="Current epoch", leave = False):
             model.train()
             optimizer.zero_grad()
@@ -155,17 +155,18 @@ if __name__ == "__main__":
             outputs = model(images)  
             
             loss = criterion(outputs['out'], targets)
-            
+            avgloss += loss.detach().cpu()
             # Backward pass and optimization
             loss.backward()
 
 
             optimizer.step()
             
-            
+        avgloss= avgloss/len(train_dataset)   
+        print(f'avg loss for epoch{epoch+1} ={avgloss}', end='\n')
         if epoch+1%2:
-        
-            torch.save(model.state_dict(), f'FT_CE_classindexedGT{epoch+1}.pth')
+            
+            torch.save(model.state_dict(), f'allparm_CE_classindexedGT{epoch+1}.pth')
 
         
             
